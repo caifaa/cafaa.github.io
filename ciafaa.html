@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高清转账截图生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased !important;
+            font-smooth: always !important;
+            font-feature-settings: "tnum" 1; /* 启用等宽数字 */
+        }
+        body {
+            background: #E5E7EB;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            overscroll-behavior: none;
+            font-size: 14px; /* 基础字体大小统一 */
+            line-height: 1.4; /* 行高优化 */
+        }
+        .editable {
+            cursor: text;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .editable:focus {
+            outline: 2px dashed #007AFF;
+            background: rgba(0,122,255,0.06);
+        }
+        /* 手机容器适配真实手机尺寸 */
+        .phone-container {
+            max-width: 390px;
+            width: 390px !important;
+            height: 844px !important; /* iPhone 14尺寸 */
+            margin: 20px auto;
+            background: #1A1A1A;
+            border-radius: 36px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            overflow: hidden;
+            position: relative;
+        }
+        .phone-frame::before {
+            display: none !important;
+        }
+        .template-tab {
+            display: none;
+            width: 390px !important;
+            height: 844px !important;
+            overflow-y: auto;
+        }
+        .template-tab.active {
+            display: block;
+        }
+        .btn-primary {
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 122, 255, 0.3);
+        }
+        .btn-secondary {
+            background: #F2F2F7;
+            color: #007AFF;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-secondary:hover {
+            background: #e5e5ea;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .real-divider { border-top: 0.5px solid #E5E7EB; }
+        #captureArea * {
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+        }
+
+        /* ========== 状态栏样式（优化大小+字体） ========== */
+        #statusBar {
+            background: #000 !important;
+            color: #fff !important;
+            padding: 12px 16px 4px !important; /* 大幅缩小状态栏内边距 */
+            font-family: "SF Pro Text", sans-serif !important;
+            font-size: 11px !important; /* 优化状态栏字体大小 */
+            font-weight: 400 !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 999 !important;
+            width: 100% !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            height: 28px !important; /* 固定状态栏高度 */
+        }
+        #statusBar svg {
+            width: 12px !important; /* 缩小状态栏图标 */
+            height: 12px !important;
+            fill: currentColor !important;
+        }
+        #batteryBody {
+            border-color: #fff !important;
+            width: 20px !important; /* 缩小电池图标 */
+            height: 10px !important;
+            border-radius: 2px !important;
+            position: relative !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 1px !important;
+        }
+        #batteryLevel {
+            height: 7px !important; /* 缩小电池电量条 */
+            border-radius: 1px !important;
+            transition: all 0.5s !important;
+            background: #fff !important;
+        }
+        #batteryPercent {
+            font-size: 9px !important; /* 优化电量百分比字体 */
+            opacity: 1 !important;
+            margin-right: 2px !important;
+        }
+        #batteryBody::after {
+            content: "" !important;
+            position: absolute !important;
+            right: -2px !important;
+            background: #fff !important;
+            width: 1.5px !important; /* 缩小电池头 */
+            height: 5px !important;
+            border-radius: 0 1px 1px 0 !important;
+        }
+        #batteryLevel.low-battery {
+            background: #ef4444 !important;
+        }
+        #statusTime {
+            font-weight: 500 !important; /* 时间字体稍粗更真实 */
+        }
+        #statusBar .scale-90 {
+            font-size: 10px !important; /* 5G文字大小优化 */
+            font-weight: 500 !important;
+        }
+
+        /* ========== 支付宝模板（优化金额字体） ========== */
+        #alipay {
+            background: #f5f5f7 !important;
+            height: 100% !important;
+            padding-bottom: 20px;
+        }
+        .alipay-header {
+            background: #007AFF;
+            color: white;
+            padding: 20px 15px 25px; /* 适配状态栏缩小后的间距 */
+            text-align: center;
+            position: relative;
+        }
+        .alipay-complete-btn-top {
+            position: absolute;
+            top: 18px;
+            right: 15px;
+            font-size: 16px; /* 优化字体大小 */
+            font-weight: 400;
+            letter-spacing: 0.2px;
+        }
+        .alipay-logo {
+            width: 40px; 
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+        }
+        .alipay-logo svg {
+            width: 22px;
+            height: 22px;
+            fill: #007AFF;
+        }
+        .alipay-success-text {
+            font-size: 19px; /* 优化标题字体 */
+            margin-bottom: 18px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        /* 支付宝金额字体优化 - 核心修改 */
+        .alipay-amount {
+            font-size: 42px; 
+            font-weight: 700; /* 加重字重更真实 */
+            margin-bottom: 20px;
+            letter-spacing: 0.2px; /* 减小字间距更自然 */
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+            -webkit-text-stroke: 0.2px rgba(255,255,255,0.1); /* 轻微描边增强质感 */
+        }
+        .alipay-info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px; /* 优化信息行字体 */
+            margin-bottom: 8px;
+            padding: 0 10px;
+            font-weight: 400;
+        }
+        .alipay-benefit-card {
+            background: white;
+            margin: 15px 15px;
+            border-radius: 12px;
+            padding: 16px 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .alipay-benefit-title {
+            font-size: 16px; /* 优化福利标题 */
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1d1d1f;
+            letter-spacing: 0.1px;
+        }
+        .alipay-benefit-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 0;
+            border-bottom: 0.5px solid #f0f0f0;
+        }
+        .alipay-benefit-item:last-child {
+            border-bottom: none;
+        }
+        .alipay-benefit-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .alipay-benefit-icon {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .alipay-benefit-text {
+            display: flex;
+            flex-direction: column;
+        }
+        .alipay-benefit-main {
+            font-size: 14px; /* 优化福利主文字 */
+            color: #1d1d1f;
+            font-weight: 400;
+        }
+        .alipay-benefit-sub {
+            font-size: 11px; /* 优化福利副文字 */
+            color: #86868b;
+            margin-top: 1px;
+            letter-spacing: 0.1px;
+        }
+        .alipay-benefit-btn {
+            background: #FF4500;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px; /* 优化按钮字体 */
+            font-weight: 400;
+        }
+        .alipay-complete-btn-bottom {
+            width: 85%;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 0;
+            font-size: 16px; /* 优化按钮字体 */
+            margin: 30px auto 0;
+            display: block;
+            box-shadow: 0 2px 8px rgba(0,122,255,0.2);
+            font-weight: 500;
+        }
+
+        /* ========== 微信支付（黑色版）优化金额字体 ========== */
+        #transferDetail {
+            background: #1A1A1A !important;
+            height: 100% !important;
+        }
+        .wechat-black-bg {
+            background: #1A1A1A;
+            width: 100% !important;
+            height: 100% !important;
+            padding: 10px 15px 20px !important; /* 适配状态栏缩小 */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        .wechat-notice-bar {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 10px 16px;
+            margin-bottom: 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .wechat-notice-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .wechat-notice-title {
+            font-size: 14px; /* 优化通知标题 */
+            color: #000;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+        }
+        .wechat-notice-desc {
+            font-size: 12px; /* 优化通知描述 */
+            color: #666;
+            line-height: 1.3;
+        }
+        .wechat-notice-icon {
+            width: 30px;
+            height: 30px;
+            background: #07C160;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .wechat-amount-area {
+            text-align: center;
+            margin-bottom: 65px;
+        }
+        .wechat-payee {
+            font-size: 20px; /* 优化收款人字体 */
+            color: #FFFFFF;
+            margin-bottom: 25px;
+            letter-spacing: 0.3px;
+            font-weight: 400;
+        }
+        /* 微信金额字体优化 - 核心修改 */
+        .wechat-amount {
+            font-size: 40px; 
+            font-weight: 800; /* 微信金额更粗 */
+            color: #FFFFFF;
+            letter-spacing: 0.1px;
+            font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-text-stroke: 0.3px rgba(255,255,255,0.05);
+        }
+        .wechat-charity {
+            font-size: 12px; /* 优化公益文字 */
+            color: #FF3B30;
+            margin: 80px 0 120px 0;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 400;
+        }
+        .wechat-charity::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            background: #FF3B30;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .wechat-complete-btn {
+            width: 85%;
+            height: 48px;
+            line-height: 48px;
+            background: #333333;
+            color: #FFFFFF;
+            text-align: center;
+            border-radius: 10px;
+            font-size: 16px; /* 优化按钮字体 */
+            font-weight: 400;
+            margin: 0 auto;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+            letter-spacing: 0.2px;
+        }
+
+        /* ========== 银行卡转账模板（优化金额字体） ========== */
+        #bankTransfer {
+            background: #ffffff !important;
+            height: 100% !important;
+            padding: 0 15px;
+        }
+        .bank-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0; /* 适配状态栏缩小 */
+            font-size: 17px; /* 优化标题字体 */
+            font-weight: 500;
+            color: #333;
+            letter-spacing: 0.1px;
+        }
+        .bank-header-title {
+            text-align: center;
+            flex: 1;
+            font-size: 17px;
+            font-weight: 500;
+        }
+        .bank-header-complete {
+            font-size: 15px; /* 优化完成按钮 */
+            color: #333;
+            font-weight: 400;
+        }
+        .bank-success-icon {
+            width: 58px;
+            height: 58px;
+            background: #07C160;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+        }
+        .bank-success-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+        .bank-success-text {
+            text-align: center;
+            font-size: 16px; /* 优化成功文字 */
+            color: #333;
+            margin-bottom: 22px;
+            font-weight: 400;
+            letter-spacing: 0.1px;
+        }
+        /* 银行卡金额字体优化 - 核心修改 */
+        .bank-amount {
+            text-align: center;
+            font-size: 38px; 
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 35px;
+            letter-spacing: 0.15px;
+            font-family: "PingFang SC", "Microsoft Yahei", sans-serif;
+        }
+        .bank-info-list {
+            margin-bottom: 25px;
+        }
+        .bank-info-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 15px; /* 优化信息字体 */
+            padding: 9px 0;
+            color: #333;
+            font-weight: 400;
+        }
+        .bank-info-label {
+            color: #666;
+            font-weight: 400;
+        }
+        .bank-fingerprint-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-top: 0.5px solid #eee;
+            border-bottom: 0.5px solid #eee;
+            margin-bottom: 25px;
+        }
+        .bank-fingerprint-text {
+            font-size: 15px; /* 优化指纹文字 */
+            color: #666;
+            font-weight: 400;
+        }
+        .bank-switch {
+            width: 48px;
+            height: 28px;
+            background: #e5e5e5;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+        }
+        .bank-switch::after {
+            content: "";
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+        .bank-btn-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .bank-btn-transfer {
+            flex: 1;
+            background: white;
+            border: 1px solid #e6002d;
+            color: #e6002d;
+            border-radius: 6px;
+            padding: 12px 0;
+            font-size: 16px; /* 优化按钮字体 */
+            font-weight: 500;
+            letter-spacing: 0.1px;
+        }
+        .bank-btn-notify {
+            flex: 1;
+            background: #e6002d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 0;
+            font-size: 16px; /* 优化按钮字体 */
+            font-weight: 500;
+            letter-spacing: 0.1px;
+        }
+        .bank-tab-bar {
+            display: flex;
+            border-bottom: 0.5px solid #eee;
+            margin-bottom: 12px;
+        }
+        .bank-tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            font-size: 15px; /* 优化标签字体 */
+            color: #007AFF;
+            font-weight: 400;
+        }
+        .bank-tab-item.active {
+            color: #333;
+            position: relative;
+            font-weight: 500;
+        }
+        .bank-tab-item.active::after {
+            content: "";
+            position: absolute;
+            bottom: -0.5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 2px;
+            background: #333;
+        }
+        .bank-ad-card {
+            background: #fff0f0;
+            border-radius: 8px;
+            padding: 12px 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        .bank-ad-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 16px;
+            height: 16px;
+            background: #ddd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #666;
+        }
+        .bank-ad-title {
+            font-size: 13px; /* 优化广告标题 */
+            color: #e6002d;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
+        .bank-ad-title svg {
+            width: 14px;
+            height: 14px;
+            fill: #e6002d;
+        }
+        .bank-ad-content {
+            font-size: 13px; /* 优化广告内容 */
+            color: #333;
+            margin-bottom: 12px;
+            line-height: 1.3;
+            font-weight: 400;
+        }
+        .bank-ad-rate {
+            font-size: 18px; /* 优化利率字体 */
+            color: #e6002d;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .bank-ad-rate span {
+            font-size: 13px; /* 优化利率说明 */
+            color: #666;
+            font-weight: 400;
+        }
+        .bank-ad-btn {
+            background: #e6002d;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 5px 18px;
+            font-size: 13px; /* 优化广告按钮 */
+            font-weight: 500;
+        }
+        .bank-ad-img {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            width: 55px;
+            height: 55px;
+            opacity: 0.8;
+        }
+
+        /* ========== 云闪付模板（优化金额字体） ========== */
+        #yunshanfu {
+            background: #f5f5f5 !important;
+            height: 100% !important;
+            padding: 10px 15px; /* 适配状态栏缩小 */
+        }
+        .ysf-back-btn {
+            font-size: 15px; /* 优化返回按钮 */
+            color: #333;
+            margin-bottom: 18px;
+            font-weight: 400;
+        }
+        .ysf-title {
+            text-align: center;
+            font-size: 17px; /* 优化标题 */
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 18px;
+            letter-spacing: 0.1px;
+        }
+        .ysf-transaction-card {
+            background: white;
+            border-radius: 8px;
+            padding: 18px 15px;
+            margin-bottom: 12px;
+        }
+        .ysf-card-top {
+            border-bottom: 1px dashed #ddd;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+        .ysf-trans-type {
+            text-align: center;
+            font-size: 15px; /* 优化交易类型 */
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+        /* 云闪付金额字体优化 - 核心修改 */
+        .ysf-trans-amount {
+            text-align: center;
+            font-size: 24px; 
+            font-weight: 700;
+            color: #333;
+            letter-spacing: 0.1px;
+            font-family: "PingFang SC", sans-serif;
+        }
+        .ysf-info-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px; /* 优化信息字体 */
+            padding: 7px 0;
+            color: #333;
+            font-weight: 400;
+        }
+        .ysf-info-label {
+            color: #999;
+            font-weight: 400;
+        }
+        .ysf-more-btn {
+            text-align: center;
+            color: #007AFF;
+            font-size: 13px; /* 优化更多按钮 */
+            margin: 8px 0;
+            font-weight: 400;
+        }
+        .ysf-menu-item {
+            background: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px; /* 优化菜单字体 */
+            color: #333;
+            font-weight: 400;
+        }
+        .ysf-menu-arrow {
+            color: #999;
+            font-size: 15px;
+        }
+        .ysf-ad-banner {
+            background: linear-gradient(to right, #FF6700, #FF3300);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-top: 8px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .ysf-ad-title {
+            font-size: 17px; /* 优化广告标题 */
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: 0.1px;
+        }
+        .ysf-ad-subtitle {
+            font-size: 11px; /* 优化广告副标题 */
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+        .ysf-ad-btn {
+            background: yellow;
+            color: #FF6700;
+            border: none;
+            border-radius: 20px;
+            padding: 3px 13px;
+            font-size: 11px; /* 优化广告按钮 */
+            font-weight: 600;
+        }
+        .ysf-ad-img {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 55px;
+            height: 75px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="max-w-4xl mx-auto px-4 py-4 flex flex-wrap gap-3 justify-center">
+    <select id="templateSelect" class="px-4 py-3 rounded-xl border border-gray-200 text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="alipay">支付宝支付成功</option>
+        <option value="bankTransfer">银行卡转账成功</option>
+        <option value="transferDetail">微信支付（黑色版）</option>
+        <option value="yunshanfu">云闪付交易详情</option>
+    </select>
+    <button id="saveBtn" class="btn-primary">💾 保存高清图片</button>
+    <button id="editToggle" class="btn-secondary">✏️ 开启/关闭编辑</button>
+</div>
+
+<div id="captureArea" class="phone-container phone-frame no-scrollbar relative">
+    <!-- 状态栏 -->
+    <div id="statusBar" class="editable" contenteditable="false">
+        <div id="statusTime">00:00</div>
+        <div class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+            </svg>
+            <span class="scale-90 font-bold">5G</span>
+            <div class="flex items-center gap-1">
+                <span id="batteryPercent" class="text-[9px] opacity-90">100%</span>
+                <div id="batteryBody" class="border border-white/60 rounded-[2px] w-6 h-3 relative flex items-center px-[1px]">
+                    <div id="batteryLevel" class="bg-white h-2 rounded-[1px] transition-all duration-500" style="width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 支付宝模板 -->
+    <div id="alipay" class="template-tab active">
+        <div class="alipay-header">
+            <div class="alipay-complete-btn-top editable">完成</div>
+            <div class="alipay-logo">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+            </div>
+            <div class="alipay-success-text editable">支付成功</div>
+            <div class="alipay-amount editable">¥100.00</div>
+            <div class="alipay-info-row">
+                <div class="editable">李哈哈</div>
+                <div class="editable">¥100.00</div>
+            </div>
+            <div class="alipay-info-row">
+                <div class="editable">交易方式</div>
+                <div class="editable">余额宝(转出资金付款)</div>
+            </div>
+        </div>
+        
+        <div class="alipay-benefit-card">
+            <div class="alipay-benefit-title editable">支付有福利</div>
+            <div class="alipay-benefit-item">
+                <div class="alipay-benefit-left">
+                    <div class="alipay-benefit-icon" style="background: #f0f0f0;">
+                        <svg width="18" height="18" fill="#FF4500" viewBox="0 0 24 24">
+                            <path d="M20 3H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V5c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v3zm0-3H6V6h12v3z"/>
+                        </svg>
+                    </div>
+                    <div class="alipay-benefit-text">
+                        <div class="alipay-benefit-main editable">1.5元 100元话费充值券</div>
+                        <div class="alipay-benefit-sub editable">话费数字充值中心 满100元可用</div>
+                    </div>
+                </div>
+                <button class="alipay-benefit-btn editable">免费领</button>
+            </div>
+            <div class="alipay-benefit-item">
+                <div class="alipay-benefit-left">
+                    <div class="alipay-benefit-icon" style="background: #f0f0f0;">
+                        <svg width="18" height="18" fill="#FF4500" viewBox="0 0 24 24">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 14H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v10c0 .55-.45 1-1 1z"/>
+                        </svg>
+                    </div>
+                    <div class="alipay-benefit-text">
+                        <div class="alipay-benefit-main editable">租苹果新机太省啦</div>
+                        <div class="alipay-benefit-sub editable">人人租 24h内顺丰发货</div>
+                    </div>
+                </div>
+                <button class="alipay-benefit-btn editable">去看看</button>
+            </div>
+            <div class="alipay-benefit-item">
+                <div class="alipay-benefit-left">
+                    <div class="alipay-benefit-icon" style="background: #f0f0f0;">
+                        <svg width="18" height="18" fill="#FF8C00" viewBox="0 0 24 24">
+                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                        </svg>
+                    </div>
+                    <div class="alipay-benefit-text">
+                        <div class="alipay-benefit-main editable">10元 拼车券</div>
+                        <div class="alipay-benefit-sub editable">滴滴出行 无门槛使用</div>
+                    </div>
+                </div>
+                <button class="alipay-benefit-btn editable">免费领</button>
+            </div>
+            <div class="alipay-benefit-item">
+                <div class="alipay-benefit-left">
+                    <div class="alipay-benefit-icon" style="background: #f0f0f0;">
+                        <svg width="18" height="18" fill="#007AFF" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                        </svg>
+                    </div>
+                    <div class="alipay-benefit-text">
+                        <div class="alipay-benefit-main editable">100个 福利金可抵扣现金</div>
+                        <div class="alipay-benefit-sub editable">网商银行 轻松当钱花</div>
+                    </div>
+                </div>
+                <button class="alipay-benefit-btn editable">免费领</button>
+            </div>
+            <div class="alipay-benefit-item">
+                <div class="alipay-benefit-left">
+                    <div class="alipay-benefit-icon" style="background: #f0f0f0;">
+                        <svg width="18" height="18" fill="#FFCC00" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                        </svg>
+                    </div>
+                    <div class="alipay-benefit-text">
+                        <div class="alipay-benefit-main editable">10亿 到店红包免费发放</div>
+                        <div class="alipay-benefit-sub editable">春季消费节 即领即用，天天可抢</div>
+                    </div>
+                </div>
+                <button class="alipay-benefit-btn editable">立即抢</button>
+            </div>
+        </div>
+        
+        <button class="alipay-complete-btn-bottom editable">完成</button>
+    </div>
+
+    <!-- 银行卡转账模板 -->
+    <div id="bankTransfer" class="template-tab">
+        <div class="bank-header">
+            <div class="editable">&nbsp;</div>
+            <div class="bank-header-title editable">银行卡转账</div>
+            <div class="bank-header-complete editable">完成</div>
+        </div>
+        
+        <div class="bank-success-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+            </svg>
+        </div>
+        
+        <div class="bank-success-text editable">转账成功,实时到账</div>
+        
+        <div class="bank-amount editable">¥100.00</div>
+        
+        <div class="bank-info-list">
+            <div class="bank-info-item">
+                <div class="bank-info-label editable">收款人</div>
+                <div class="editable">李哈哈</div>
+            </div>
+            <div class="bank-info-item">
+                <div class="bank-info-label editable">收款账号</div>
+                <div class="editable">中国银行(7359)</div>
+            </div>
+        </div>
+        
+        <div class="bank-fingerprint-row">
+            <div class="bank-fingerprint-text editable">开通指纹转账</div>
+            <div class="bank-switch editable"></div>
+        </div>
+        
+        <div class="bank-btn-group">
+            <button class="bank-btn-transfer editable">继续转账</button>
+            <button class="bank-btn-notify editable">通知收款人</button>
+        </div>
+        
+        <div class="bank-tab-bar">
+            <div class="bank-tab-item editable">预约转账</div>
+            <div class="bank-tab-item active editable">转账明细</div>
+            <div class="bank-tab-item editable">查询余额</div>
+        </div>
+        
+        <div class="bank-ad-card">
+            <div class="bank-ad-close editable">×</div>
+            <div class="bank-ad-title editable">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                </svg>
+                爆款理财
+            </div>
+            <div class="bank-ad-content editable">30天后每日可赎 | 固收+稳健 | 1元起购 | PR2</div>
+            <div class="bank-ad-rate editable">3.11% <span>近3月年化收益率</span></div>
+            <button class="bank-ad-btn editable">立即购买</button>
+            <div class="bank-ad-img editable"></div>
+        </div>
+    </div>
+
+    <!-- 微信支付（黑色版） -->
+    <div id="transferDetail" class="template-tab">
+        <div class="wechat-black-bg">
+            <div class="wechat-notice-bar">
+                <div class="wechat-notice-left">
+                    <div class="wechat-notice-title editable">
+                        <span>微信</span>
+                        <span>现在</span>
+                    </div>
+                    <div class="wechat-notice-desc editable">
+                        微信支付 已支付100.00元
+                    </div>
+                </div>
+                <div class="wechat-notice-icon">✓</div>
+            </div>
+
+            <div class="wechat-amount-area">
+                <div class="wechat-payee editable">李哈哈(*要)</div>
+                <div class="wechat-amount editable">¥100.00</div>
+            </div>
+
+            <div class="wechat-charity editable">
+                1分钱做好事 >
+            </div>
+
+            <div class="wechat-complete-btn editable">完成</div>
+        </div>
+    </div>
+
+    <!-- 云闪付模板 -->
+    <div id="yunshanfu" class="template-tab">
+        <div class="ysf-back-btn editable">←</div>
+        <div class="ysf-title editable">交易详情</div>
+        
+        <div class="ysf-transaction-card">
+            <div class="ysf-card-top">
+                <div class="ysf-trans-type editable">银联转账（云闪付）</div>
+                <div class="ysf-trans-amount editable">-¥2.00</div>
+            </div>
+            
+            <div class="ysf-info-item">
+                <div class="ysf-info-label editable">卡号</div>
+                <div class="editable">农业银行银联储蓄卡[5476]</div>
+            </div>
+            <div class="ysf-info-item">
+                <div class="ysf-info-label editable">交易时间</div>
+                <div class="editable">2026-04-05 01:55</div>
+            </div>
+            <div class="ysf-info-item">
+                <div class="ysf-info-label editable">交易类别</div>
+                <div class="editable">消费</div>
+            </div>
+            <div class="ysf-info-item">
+                <div class="ysf-info-label editable">分类</div>
+                <div class="editable">资金往来-转账</div>
+            </div>
+            
+            <div class="ysf-more-btn editable">更多 ▼</div>
+        </div>
+        
+        <div class="ysf-menu-item">
+            <div class="editable">余额查询</div>
+            <div class="ysf-menu-arrow editable">></div>
+        </div>
+        
+        <div class="ysf-menu-item">
+            <div class="editable">对此交易有疑问</div>
+            <div class="ysf-menu-arrow editable">></div>
+        </div>
+        
+        <div class="ysf-ad-banner">
+            <div class="ysf-ad-title editable">有奖纠错</div>
+            <div class="ysf-ad-subtitle editable">赢千元大奖</div>
+            <div class="ysf-ad-subtitle editable">商户信息与真实商户信息不符</div>
+            <button class="ysf-ad-btn editable">立即晒单</button>
+            <div class="ysf-ad-img"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 状态栏功能：实时时间+随机电量
+    function updateStatusBarTime() {
+        const now = new Date();
+        document.getElementById('statusTime').innerText = 
+            String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    }
+
+    function randomizeBattery() {
+        const percent = Math.floor(Math.random() * 84) + 15;
+        document.getElementById('batteryPercent').innerText = percent + '%';
+        
+        const levelBar = document.getElementById('batteryLevel');
+        levelBar.style.width = percent + '%';
+
+        if (percent < 20) {
+            levelBar.classList.add('low-battery');
+            levelBar.classList.remove('bg-white');
+        } else {
+            levelBar.classList.remove('low-battery');
+            levelBar.classList.add('bg-white');
+        }
+    }
+
+    setInterval(updateStatusBarTime, 1000);
+    updateStatusBarTime();
+    randomizeBattery();
+
+    // 模板切换
+    const templateSelect=document.getElementById('templateSelect');
+    const tabs=document.querySelectorAll('.template-tab');
+    templateSelect.addEventListener('change',function(){
+        tabs.forEach(t=>t.classList.remove('active'));
+        document.getElementById(this.value).classList.add('active');
+        document.getElementById('statusBar').style.background = '#000';
+        document.getElementById('statusBar').style.color = '#fff';
+    });
+
+    // 编辑开关
+    const editToggle=document.getElementById('editToggle');
+    const editables=document.querySelectorAll('.editable');
+    let edit=false;
+    editToggle.addEventListener('click',function(){
+        edit=!edit;
+        document.getElementById('statusBar').contentEditable = false;
+        editables.forEach(e=>{
+            if(e.id !== 'statusBar') e.contentEditable=edit;
+        });
+        this.innerText=edit?'✅ 编辑已开启':'✏️ 开启/关闭编辑';
+    });
+
+    // 保存图片
+    const saveBtn=document.getElementById('saveBtn');
+    const captureArea=document.getElementById('captureArea');
+    saveBtn.addEventListener('click',async function(){
+        this.disabled=true;
+        this.innerText='生成中…';
+        
+        try {
+            const canvas = await html2canvas(captureArea, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: '#1A1A1A',
+                width: 390,
+                height: 844,
+                letterRendering: true,
+                allowTaint: false,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 390,
+                windowHeight: 844,
+                ignoreElements: (el) => false
+            });
+
+            const a=document.createElement('a');
+            a.download='转账截图_'+new Date().getTime()+'.png';
+            a.href=canvas.toDataURL('image/png', 1.0);
+            a.click();
+
+            alert('保存成功！图片尺寸为 1170x2532（3倍高清），完美适配手机截图');
+        } catch (err) {
+            alert('保存失败，请重试');
+            console.error(err);
+        } finally {
+            this.disabled=false;
+            this.innerText='💾 保存高清图片';
+        }
+    });
+</script>
+</body>
+</html>
