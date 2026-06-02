@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选妃 - 心动交友</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-image: url('https://images.unsplash.com/photo-1529543544277-750e7ea0e0d8?w=1920&q=80');
+            --bg-video: url('');
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), var(--bg-image) center/cover no-repeat fixed;
+            color: #333;
+            position: relative;
+        }
+
+        .bg-video {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 100vw;
+            height: 100vh;
+            min-width: 100%;
+            min-height: 100%;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0;
+        }
+
+        .bg-video.active {
+            opacity: 1;
+        }
+
+        body.has-video {
+            background: rgba(0,0,0,0.4);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        header h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 32px;
+            border-radius: 30px;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .tab.active {
+            background: #ff4757;
+            color: white;
+        }
+
+        .tab:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .tab.active:hover {
+            background: #ff3344;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 16px 0;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .card img {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+        }
+
+        .card-info {
+            padding: 12px;
+        }
+
+        .card-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .card-desc {
+            color: #666;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        footer {
+            background: rgba(0,0,0,0.6);
+            padding: 20px 0;
+            margin-top: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        .record-info {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .record-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+        }
+
+        .record-item img {
+            opacity: 0.7;
+        }
+
+        .copyright {
+            color: rgba(255,255,255,0.5);
+            font-size: 11px;
+            margin: 0;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .tag {
+            padding: 4px 12px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+
+        .package-actions {
+            flex-direction: column;
+        }
+
+        .package-btn {
+            width: 100%;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+
+
+
+
+        .btn-detail {
+            background: #2ed573;
+            color: white;
+        }
+
+        .btn-detail:hover {
+            background: #28c368;
+        }
+
+        /* 弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            position: relative;
+        }
+
+        .modal-header img {
+            width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            background: #f5f5f5;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .modal-info {
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .modal-desc {
+            color: #444;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .modal-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* 自定义背景提示 */
+        .customize-tip {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .customize-tip code {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* 响应式 - 手机也显示两列 */
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.8rem; }
+            header p { font-size: 1rem; }
+            .container { padding: 10px; }
+            .grid { 
+                grid-template-columns: 1fr 1fr; 
+                gap: 10px;
+                max-width: 100%;
+            }
+            .card img { height: 140px; }
+            .customize-tip { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <video class="bg-video" id="bgVideo" autoplay muted loop playsinline>
+        <source src="https://corper.cn/view.php/ce22c7d3d4930962d4517e3c006858ca.mp4" type="video/mp4">
+    </video>
+    <div class="container">
+        <header>
+            <h1>💕 选妃</h1>
+            <p>点击卡片查看详情，心动就约她吧！</p>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('xuanfei')">💕 选妃</button>
+                <button class="tab" onclick="switchTab('baoyang')">💰 包养</button>
+                <button class="tab" onclick="switchTab('luoliao')">🎥 裸聊</button>
+            </div>
+        </header>
+
+        <div class="grid" id="userGrid"></div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <img id="modalImg" src="" alt="">
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-name" id="modalName"></div>
+                <div class="modal-info" id="modalInfo"></div>
+                <div class="modal-tags" id="modalTags"></div>
+                <div class="modal-desc" id="modalDesc"></div>
+                <div class="card-actions">
+                    <button class="btn btn-like" id="modalLike" onclick="toggleLike()">❤️ 心动</button>
+                    <button class="btn btn-detail">📩 私信</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="customize-tip">
+        自定义背景：修改 CSS 中 <code>--bg-image</code> 的值
+    </div>
+
+    <script>
+        // ============ 视频背景初始化 ============
+        function initVideoBackground() {
+            const videoUrl = 'https://corper.cn/down.php/ce22c7d3d4930962d4517e3c006858ca.mp4';
+            const video = document.getElementById('bgVideo');
+            
+            if (videoUrl) {
+                video.src = videoUrl;
+                video.classList.add('active');
+                document.body.classList.add('has-video');
+            }
+        }
+        
+        initVideoBackground();
+
+        // ============ 选妃数据 ============
+        const xuanfeiUsers = [
+            {
+                name: '口水',
+                age: 22,
+                location: '上海',
+                job: '设计师',
+                avatar: 'https://i.postimg.cc/QNqTvcMw/photo-2026-04-06-12-26-17.jpg',
+                tags: ['B罩'],
+                desc: '次120u 包夜200u 可无t'
+            },
+            {
+                name: '雪碧',
+                age: 21,
+                location: '北京',
+                job: '无业',
+                avatar: 'https://i.postimg.cc/xdmgdtNH/photo-2026-06-02-23-22-16.jpg',
+                tags: ['C罩'],
+                desc: '次150u 包夜260u'
+            },
+            {
+                name: '小雨',
+                age: 23,
+                location: '深圳',
+                job: '会计',
+                avatar: 'https://i.postimg.cc/3N90pQ6C/photo-2026-04-07-17-39-25.jpg',
+                tags: ['B罩'],
+                desc: '次180u 包夜320u 可无t'
+            },
+            {
+                name: '婷婷',
+                age: 19,
+                location: '广州',
+                job: '幼师',
+                avatar: 'https://i.postimg.cc/vTXx9wjt/photo-2026-04-16-20-51-37.jpg',
+                tags: ['B罩'],
+                desc: '次140u 包夜240u'
+            },
+            {
+                name: '小雪',
+                age: 21,
+                location: '杭州',
+                job: '护士',
+                avatar: 'https://i.postimg.cc/QNqTvctK/photo-2026-04-16-20-52-28.jpg',
+                tags: ['C罩'],
+                desc: '次160u 包夜280u 可无t'
+            },
+            {
+                name: '青青',
+                age: 18,
+                location: '山东',
+                job: '学生',
+                avatar: 'https://i.postimg.cc/ZKKdm0Bj/photo-2026-04-30-00-52-24.jpg',
+                tags: ['B罩'],
+                desc: '次200u 包夜360u'
+            },
+            {
+                name: '静静',
+                age: 22,
+                location: '重庆',
+                job: '无业',
+                avatar: 'https://i.postimg.cc/nccDxMjk/photo-2026-04-30-00-52-53.jpg',
+                tags: ['D罩'],
+                desc: '次110u 包夜180u'
+            },
+            {
+                name: '萌萌',
+                age: 23,
+                location: '武汉',
+                job: '导游',
+                avatar: 'https://i.postimg.cc/xTTzQqJp/photo-2026-05-04-12-57-21.jpg',
+                tags: ['C罩'],
+                desc: '次150u 包夜260u 可无t'
+            },
+            {
+                name: '思思',
+                age: 22,
+                location: '南京',
+                job: '护士',
+                avatar: 'https://i.postimg.cc/9F8qQVZL/photo-2026-05-08-13-35-12.jpg',
+                tags: ['C罩'],
+                desc: '童颜巨乳 次220u 包夜400u'
+            },
+            {
+                name: '晓晓',
+                age: 24,
+                location: '苏州',
+                job: '瑜伽教练',
+                avatar: 'https://i.postimg.cc/Kvqg8Ftb/photo-2026-05-11-15-35-44.jpg',
+                tags: ['C罩'],
+                desc: '次130u 包夜220u'
+            },
+            {
+                name: '娜娜',
+                age: 23,
+                location: '西安',
+                job: '音乐人',
+                avatar: 'https://i.postimg.cc/c498LZfq/photo-2026-05-11-15-35-44-(2).jpg',
+                tags: ['C罩'],
+                desc: '次170u 包夜300u 可无t'
+            },
+            {
+                name: '莉莉',
+                age: 19,
+                location: '郑州',
+                job: '化妆师',
+                avatar: 'https://i.postimg.cc/Z5Wv9gxG/photo-2026-05-11-15-36-16.jpg',
+                tags: ['C罩'],
+                desc: '次190u 包夜340u'
+            },
+            {
+                name: '莹莹',
+                age: 22,
+                location: '长沙',
+                job: '海员',
+                avatar: 'https://i.postimg.cc/6pF2C0Hq/photo-2026-05-11-15-36-47.jpg',
+                tags: ['B罩'],
+                desc: '次140u 包夜240u'
+            },
+            {
+                name: '芳芳',
+                age: 23,
+                location: '青岛',
+                job: '幼师',
+                avatar: 'https://i.postimg.cc/FHwd0ZPf/photo-2026-05-11-15-37-02.jpg',
+                tags: ['B罩'],
+                desc: '次160u 包夜280u'
+            },
+            {
+                name: '婷婷',
+                age: 23,
+                location: '天津',
+                job: '甜品师',
+                avatar: 'https://i.postimg.cc/vZCg5zPV/photo-2026-05-26-19-18-34.jpg',
+                tags: ['c罩'],
+                desc: '次200u 包夜360u 可无t'
+            },
+            {
+                name: '雯雯',
+                age: 24,
+                location: '上海',
+                job: '记者',
+                avatar: 'https://i.postimg.cc/3xz42BLd/photo-2026-05-26-19-20-15.jpg',
+                tags: ['B罩'],
+                desc: '次130u 包夜220u'
+            },
+            {
+                name: '倩倩',
+                age: 25,
+                location: '北京',
+                job: '花艺师',
+                avatar: 'https://i.postimg.cc/VNMSgCT3/photo-2026-05-29-14-33-19.jpg',
+                tags: ['B罩'],
+                desc: '次150u 包夜260u'
+            },
+            {
+                name: '红红',
+                age: 25,
+                location: '深圳',
+                job: '电商主播',
+                avatar: 'https://i.postimg.cc/6QR7cvgW/photo-2026-05-29-14-33-48.jpg',
+                tags: ['D罩'],
+                desc: '次210u 包夜380u 可无t'
+            },
+            {
+                name: '兰兰',
+                age: 26,
+                location: '广州',
+                job: '律师',
+                avatar: 'https://i.postimg.cc/PxjCRqnk/photo-2026-05-29-14-35-17.jpg',
+                tags: ['D罩'],
+                desc: '次180u 包夜320u'
+            },
+            {
+                name: '玲玲',
+                age: 22,
+                location: '杭州',
+                job: '模特',
+                avatar: 'https://i.postimg.cc/NMcKz0vx/photo-2026-05-29-14-35-34.jpg',
+                tags: ['C罩'],
+                desc: '次170u 包夜300u'
+            }
+        ];
+
+        // ============ 包养数据 ============
+        const baoyangUsers = [
+            {
+                name: '小雅',
+                age: 19,
+                location: '上海',
+                job: '模特',
+                avatar: 'https://i.postimg.cc/HLB0GKd8/photo-2026-01-11-00-15-28.jpg',
+                tags: ['颜值高', '身材好', '听话', 'D罩'],
+                desc: `🍓07年 纯情女大 少萝 小甜妹 🍓 166cm 45kg 童颜巨乳D🍓盈盈一握小细腰 小巧玲珑 清纯可爱
+🍓通体雪白 上下粉嫩紧致 💦多多
+🍓双商高  乖巧听话 不催不事♡
+（好评选手 🉑看真实好评图）
+
+🎀后入超大屁屁 细腰翘臀 绝佳视觉享受
+🎀双手掌握🍑活好粘人 水多不粘手
+🎀甜度严重超标 想被哥哥抱起来doi
+🎀女友般体验  只接待素质援助
+🎀刚破处 体质敏感 易湿会吸娇喘  
+🎀主动配合100% 自动摇摇机 榨汁机 🍹
+痉挛高潮一触即发♡
+
+🎀 待哥哥如初恋般热情 主动和哥哥索💋
+主动口  主动求干 爱爱叫声超甜🥰
+
+🎀𝗸𝗶𝘀𝘀、𝗕𝗹𝗼𝘄𝗷𝗼𝗯、𝐂𝐨𝐬𝐩𝐥𝐚𝐲🎭
+🉑情趣/Jk/萝莉/cos/洛丽塔/二次元/舞蹈/
+🍬赠送哥哥增值服务哦 才艺舞蹈表演🍬
+
+♡本人温柔体贴可爱大方♡
+♡求哥哥给一次机会让我好好服务您♡。`
+            },
+            {
+                name: '倩倩',
+                age: 23,
+                location: '北京',
+                job: '主播',
+                avatar: 'https://i.postimg.cc/zf0wmM8R/photo-2026-01-14-20-21-15.jpg',
+                tags: ['网红', '会撒娇', '情商高', 'F罩'],
+                desc: `身高172，🐻F，高大白、气质型御姐
+
+真正圈外兼职、无风尘气 不抽烟🚬无纹身
+
+🉑🐍💋、🉑69、🉑共浴、外纯内sao、⬆️⬇️粉嫩
+
+0整妈生脸、可素颜见面，🧧可拍指定验证视频
+
+丰满 大臀围🍑、气质大方优雅（喜白小纯慎选）
+
+肤白**感满满、软糯Q弹
+
+爱好: 高尔夫⛳️、钢琴🎹、瑜伽🧘‍♀️普拉提、🏖……
+
+检测过的照片不是AI，不是网图，假赔`
+            },
+            {
+                name: '露露',
+                age: 22,
+                location: '深圳',
+                job: '学生',
+                avatar: 'https://i.postimg.cc/3wnjM6Y4/photo-2026-01-20-17-54-01.jpg',
+                tags: ['清纯', '大学生', '单纯', 'D罩'],
+                desc: ` 圈外女友- Get rich in 2026-真实04年
+    • Height 175
+    • Weight 98
+    • Best 🐻D
+🌈💖💛💙💜💚🧡
+常年瑜伽  健身 身体柔软 高素质  高情商
+有蜂腰 蜜臀 马甲线
+
+性格温柔 迷情投入 粉嫩桃穴 🙆🏻♀️ 极度敏感易湿
+
+高学历 高素质
+洋气少女｜性感甜美｜风格多变
+
+•照片视频均为旅行打卡拍摄
+
+𝗣𝗮𝗿𝘁 𝘁𝗶𝗺𝗲
+❤️🔥𝑰'𝒎 𝒍𝒐𝒐𝒌𝒊𝒏𝒈 𝒇𝒐𝒓𝒘𝒂𝒓𝒅 𝒕𝒐 𝒎𝒆𝒆𝒕𝒊𝒏𝒈 𝒚𝒐𝒖`
+            },
+            {
+                name: '莎莎',
+                age: 25,
+                location: '广州',
+                job: '白领',
+                avatar: 'https://i.postimg.cc/3wnjM6Yk/photo-2026-01-24-11-35-35.jpg',
+                tags: ['成熟', '优雅', '懂事', 'C罩'],
+                desc: `🍋 精致洋气网红天花板新人兼职
+
+• 漫画身材 **✨满足所有幻想❤️
+• 清纯可纯可御款 温柔女友感
+• 热情话多不冷场 高学历 高情商
+• 健身 瑜伽🧘🏻‍♀️普拉提 kpop 钢琴🎹样样精通
+  身高178 胸围c罩杯  体重48kg`
+            },
+            {
+                name: '菲菲',
+                age: 24,
+                location: '成都',
+                job: '舞蹈演员',
+                avatar: 'https://i.postimg.cc/s2wPF8sh/photo-2026-01-26-16-23-20.jpg',
+                tags: ['舞蹈', '气质好', '年轻', 'D罩'],
+                desc: `#只外出 高白淳
+- 173cm  (不穿鞋)
+- 🐻 D  （真🐻 ）
+- 02年   
+- 皮肤白嫩 透亮 3点粉五官立体 身段天然无整
+- 毕业于航空✈️学院  （有需要可以穿制服）
+- 🉑69 🐍纹 情趣 3p 4p 丝袜  
+- 🈲酒 🈲wt 🈲yt  #朵。`
+            },
+            {
+                name: '冰冰',
+                age: 20,
+                location: '杭州',
+                job: '空姐',
+                avatar: 'https://i.postimg.cc/QM0gLPh5/photo-2026-02-07-03-23-24.jpg',
+                tags: ['空姐', '优雅', '气质', 'C罩'],
+                desc: `白虎 极品白小纯 浙大兼职
+★拒绝AI 假赔总 假赔总
+★年龄06 胸围C 净身高168 
+★在校生 学信网可查 无纹身
+★全身皮肤雪白 2月份刚破处
+★双商在线 体贴温柔 配合度高
+★首次兼职 全身敏感且水多多
+★拒绝喝酒课 吃药课 低素质课`
+            },
+            {
+                name: '可可',
+                age: 18,
+                location: '重庆',
+                job: '护士',
+                avatar: 'https://i.postimg.cc/YSbNcVMY/photo-2026-02-11-22-29-45.jpg',
+                tags: ['护士', '温柔', '细心', 'C罩'],
+                desc: `纯学生兼职第一次下水
+🎀08年天然c杯 体重90斤 纯情女高 小甜妹
+🎀167m身材匀称  筷子🥢腿
+🎀bb紧致粉嫩如chu
+🎀皮肤超白嫩 
+🌸💧胸型超级酥软 **三点粉
+🌸性格超温柔体贴可爱
+🌸上课热情超级配合，不催不事
+🌸有制服，丝袜`
+            },
+            {
+                name: '萱萱',
+                age: 19,
+                location: '武汉',
+                job: '平面模特',
+                avatar: 'https://i.postimg.cc/9fJP3SCG/photo-2026-02-25-09-24-16.jpg',
+                tags: ['模特', '时尚', '高挑', 'C罩'],
+                desc: `冷白皮高白纯 腿长腰细 顶级🥢腿 夺命A4腰😍可纯可欲 清纯气质甜美款 
+🦜条件三开 甜妹天花板 🎀长腿小甜妹 腿巨长 🍓刚破处刚下水💦 敏感体质易高潮💦真实兼职在校 
+
+体验感💯 好评多多👍 无一丝风尘气息 不抽烟 香香软软 少女感十足 全身0整 妈生脸 皮肤光滑白嫩 真人真照 照片即本人 本人更好看 
+千载难逢的初恋感女孩- 有高级工作室 
+欢迎各位哥哥前来调教🍓
+🎀罩杯：C 真胸
+🎀身高：173 真实净身高
+🎀体重：88斤
+🎀年龄：真实07年 
+🎀艺术专业在校 专业舞蹈生 腿超级长 顶级🥢腿 纯欲 不长不要钱 A4腰 双商高、温柔、甜美、女友感十足
+🎀甜度超标 嘴甜 性格温柔 体贴 懂事 皮肤白嫩 光滑 冷白皮 敏感体质 三点粉嫩 、水巨多 巨紧 ！
+🎀刚破处 会吸会夹 外纯内骚 可多种姿势 配合度高 不催不事 好评多多
+🎀初次下水 只接待素质客 （无素质不退钱）刚破除三点超粉 女友般体验 不✌️ 不接药酒课 不接 （大鸡8）‼️
+期待与哥哥的相遇💗可舌吻 丝袜 制服 配合度满💯
+                    （假照赔总）`
+            },
+            {
+                name: '娜娜',
+                age: 18,
+                location: '南京',
+                job: '学生',
+                avatar: 'https://i.postimg.cc/CKmCytSC/photo-2026-03-03-14-27-58.jpg',
+                tags: ['清纯', '大学生', '可爱', 'E罩'],
+                desc: `Sh第一次来沪首开 纯新人真实08后 假赔 绝对碧玺好评服务实力派 69   🐍😘  双飞  陪🛀🏻
+
+• 𝐀𝐠𝐞年龄/08后.可现场验身份证
+• 𝐇𝐞𝐢𝐠𝐡𝐭身高/165 
+• 𝐁𝐮𝐬𝐭胸围 E 人瘦不显🉑验证.
+👛可素颜见客 👛 皮肤白嫩 温文尔雅
+
+• 三点粉 无纹身 不抽烟 不喝酒`
+            },
+            {
+                name: '莉莉',
+                age: 21,
+                location: '西安',
+                job: '网红',
+                avatar: 'https://i.postimg.cc/43BvCMsb/photo-2026-03-07-22-10-47.jpg',
+                tags: ['抖音', '颜值', '年轻', 'D罩'],
+                desc: `985双一流大学大四在读
+学生证 国家学信网可查 只接高素质k
+可全程英语交流 双商在线
+                  05/168cm/43kg/真🐻D
+十年童子功 柔韧性好 可现场跳民族舞古典舞
+
+性格开朗 见多识广 健谈 见面不尴尬 注重客户体验
+完美头身比 现实见本人脸超小 
+肤白牛奶肌 细腻光滑 吹弹可破
+清水出芙蓉 天然去雕饰 全身无纹无整
+
+真兼职 不常在 错过即是错过
+笑起来左脸单侧有酒窝 没有酒窝的均为冒
+本人真实生活照 非1:1`
+            },
+            {
+                name: '美美',
+                age: 25,
+                location: '苏州',
+                job: '茶艺师',
+                avatar: 'https://i.postimg.cc/SKDL05k5/photo-2026-03-09-17-17-26.jpg',
+                tags: ['优雅', '知性', '茶艺'],
+                desc: `
+➡️ 一字马 下腰 马甲线◀️
+🪸娇小玲珑  可纯可御  热情大方  清纯可爱   汁💦多多 可以解锁各种姿势
+
+🪸高学历 、情商高、全身雪白❄️洋气大牌、五官高级精致素颜白/0整/情绪价值到位
+
+🪸技能爱好：  潜水🤿冲浪🏄‍♀️滑雪🎿绘画🎨跳舞（有评级证件🪪)
+💝 你的理想型完美女友`
+            },
+            {
+                name: '琪琪',
+                age: 22,
+                location: '青岛',
+                job: '模特',
+                avatar: 'https://i.postimg.cc/HLB0GKdR/photo-2026-03-14-12-58-08.jpg',
+                tags: ['车模', '高挑', '性感', 'G罩'],
+                desc: `上海新开 白虎大G  留学生  无纹身🦜
+刚毕业海归大学生  无障碍英语交流👓
+
+ 04年   净身高：170.  体重49kg  🐻:G
+🉑69  🉑🐍吻  🉑夜 代开  登记
+
+全身无整 纯天然妈生💓 蜂腰**蜜桃臀💓
+白虎一线天馒头穴  三点粉超紧🌸`
+            },
+            {
+                name: '欣欣',
+                age: 24,
+                location: '天津',
+                job: '歌手',
+                avatar: 'https://i.postimg.cc/FRzyhZHZ/photo-2026-03-14-13-28-04.jpg',
+                tags: ['歌手', '才艺', '漂亮', 'D罩'],
+                desc: `• 𝐇𝐞𝐢𝐠𝐡𝐭身高/169
+   • 𝐖𝐞𝐢𝐠𝐡𝐭体重/95
+   • 𝐁𝐮𝐬𝐭胸围/D
+Occuation职业/游戏主播
+ 极品御姐 
+ 气质谈吐俱佳 双商在线  身材极佳
+A4腰 人鱼线人。`
+            },
+            {
+                name: '婷婷',
+                age: 26,
+                location: '长沙',
+                job: '模特',
+                avatar: 'https://i.postimg.cc/NMF6Q4jV/photo-2026-03-14-13-37-11.jpg',
+                tags: ['内衣模特', '身材好', '开放'],
+                desc: `💗这是航空乘务员
+💗身高172
+💗5⬆️质量  开3
+💗爱好瑜伽 高尔夫 工作室高端
+💗0️⃣整容 完美比例 三七分大长腿
+💗无纹身 雪白皮肤 肤质滑嫩 穿着时尚洋气
+💗性格开朗 五官精致 气质优雅 
+💗超级热情 超级奈斯 三点粉嫩
+💗空姐制服 空姐专用丝袜 高跟齐全
+🉑69 舌吻 车震 双飞 代开`
+            },
+            {
+                name: '萌萌',
+                age: 21,
+                location: '大连',
+                job: '学生',
+                avatar: 'https://i.postimg.cc/HxnwT2kR/photo-2026-03-14-13-49-56.jpg',
+                tags: ['大学生', '单纯', '年轻', 'D罩'],
+                desc: `杭州  𝐇𝐞𝐢𝐠𝐡𝐭身高/170 • 𝐖𝐞𝐢𝐠𝐡𝐭体重/45kg• 𝐁𝐮𝐬𝐭胸围/D  • 𝐀𝐠𝐞年龄/05
+抖音小网红 模特短开兼职 🦜质量 3开 
+纯天然雪白皮肤 S型身材
+A4腰 筷子腿 身材比例完美 全身无赘肉  有纹身 介意勿扰
+只接見素质老板❤️佛系随缘
+需预约
+情节演繹情趣制服沉浸式女友体验
+敏感体质爱如潮水一触即发
+本人比照片好看 无差评
+全球各地！各种类型！见面付💰`
+            },
+            {
+                name: '晓晓',
+                age: 25,
+                location: '合肥',
+                job: '主播',
+                avatar: 'https://i.postimg.cc/rms1qJwB/photo-2026-04-04-11-06-44.jpg',
+                tags: ['带货主播', '情商高', '会来事', 'F罩'],
+                desc: ` 爱美丽🏠新人真实主播网红模特兼职。御姐大蜜，   粉丝10w⬆️，大个干净白
+• 𝐇𝐞𝐢𝐠𝐡𝐭  身高/176
+• 𝐁𝐮𝐬𝐭      乳神🐻围真F. 圆大挺拔，手感舒适
+• Hobby   爱好/高尔夫，骑马，游泳
+🦋穿着气质大牌 高素质 高学历 性格好
+🦋气质超群 身材S形 皮肤嫩白滑 大长腿
+🦋真人真照  
+全球各地！各种类型！见面付💰`
+            },
+            {
+                name: '花花',
+                age: 24,
+                location: '厦门',
+                job: '导游',
+                avatar: 'https://i.postimg.cc/cHCRdmJG/photo-2026-04-06-01-39-28.jpg',
+                tags: ['导游', '活泼', '会玩', 'C罩'],
+                desc: `学生兼职新人
+真人真照真验证假赔总
+•打扮气质大牌，时尚潮流，颜值气质极佳
+•性格温柔 谈吐得体 待客如初恋  情绪价值拉满
+•敏感体质易湿 主动配合100%  
+• Height身高/170
+• Weight体重/88斤
+• Bust胸围/c           
+• Age年龄/02
+浪漫有趣的灵魂 热情投入有耐心
+完美沟通 真正的知书达理善解人意
+紧致水多 会调情
+🉑69 🐍 代开
+      /短暂兼职.只见素质导演.遇见即是上上签`
+            },
+            {
+                name: '红红',
+                age: 20,
+                location: '宁波',
+                job: '白领',
+                avatar: 'https://i.postimg.cc/W3zGsn4j/photo-2026-04-06-01-40-12.jpg',
+                tags: ['OL', '成熟', '韵味', 'G罩'],
+                desc: `•长期健身  A4腰  大长腿  马甲线  蜜桃臀
+• 🌸Height身高/175    🌱Weight体重100斤
+• 🌸Bust胸围/G          🌱 Age年龄：06年
+• 🌸犹Hobby兴趣/健身 
+• 🌸私处🌈紧致 （可甜可御）
+🫰 极品三点粉嫩😋
+浪漫有趣的灵魂 热情投入有耐心
+      /短暂兼职.只见素质导演.遇见即是上上签/`
+            },
+            {
+                name: '兰兰',
+                age: 21,
+                location: '无锡',
+                job: '舞蹈老师',
+                avatar: 'https://i.postimg.cc/B6bTJgvZ/photo-2026-04-06-01-41-26.jpg',
+                tags: ['舞蹈', '气质', '柔软'],
+                desc: `雪儿极品纯欲05
+极品白小纯 大学刚毕业 兼职 
+体重90（天然真实）
+🥢腿 A4腰  敏感体 一碰出氵体质三点粉 性格温柔可爱听话乖巧懂事  不催不事⭐️
+皮肤雪白光滑。🉑🐍 69 不抽烟 无纹身`
+            },
+            {
+                name: '娇娇',
+                age: 24,
+                location: '佛山',
+                job: '模特',
+                avatar: 'https://i.postimg.cc/3RFk5H3Z/photo-2026-05-29-14-35-48.jpg',
+                tags: ['网红模特', '漂亮', '听话', 'D罩'],
+                desc: `身高170cm-体重45kg-胸D CosPlay
+性格很好身材好喜欢聊天可以一起吃饭、逛街、电影、旅游、鸳鸯浴、舌吻、69、口（口活很好可以深喉）乳交足交、主动、很骚、水多活好、无差评榨汁姬一枚
+sm（含sm捆绑项圈等工具）十（掐脖子、拽头发、打屁股、作为女仆、爬行、喂食、皮带、鞭子、捆绑、角色扮演、项圈、感官剥夺、言语侮辱、人格侮辱、）轻度🈲重度
+Jk 情趣内衣 丝袜免费供挑`
+            }
+        ];
+
+        // ============ 裸聊数据 ============
+        const luoliaoUsers = [
+            {
+                name: '好人',
+                age: 22,
+                location: '成都',
+                job: '网红',
+                avatar: 'https://i.postimg.cc/13nBNNSr/photo-2026-06-01-21-35-04.jpg',
+                tags: ['可爱', 'C罩', '可定制'],
+                desc: '简介：可定制服装，可定制玩具。'
+            },
+            {
+                name: '小桃',
+                age: 22,
+                location: '上海',
+                job: '主播',
+                avatar: 'https://i.postimg.cc/dtSn1jb5/photo-2026-05-16-01-31-45.jpg',
+                tags: ['甜美', 'A罩', '可定制'],
+                desc: '简介：可定制服装，可定制玩具。'
+            },
+            {
+                name: '小鹿',
+                age: 24,
+                location: '北京',
+                job: '舞蹈生',
+                avatar: 'https://i.postimg.cc/MKrtTmCd/photo-2026-05-18-03-01-49.jpg',
+                tags: ['活泼', 'B罩', '可定制'],
+                desc: '简介：可定制服装，可定制玩具。'
+            },
+            {
+                name: '米娜',
+                age: 23,
+                location: '深圳',
+                job: '模特',
+                avatar: 'https://i.postimg.cc/m26VDyvX/photo-2026-05-23-17-31-28.jpg',
+                tags: ['高颜值', 'C罩', '可定制'],
+                desc: '简介：可定制服装，可定制玩具。'
+            },
+            {
+                name: '可可',
+                age: 21,
+                location: '广州',
+                job: '学生',
+                avatar: 'https://i.postimg.cc/tCmDTNKr/photo-2026-05-24-18-55-06.jpg',
+                tags: ['清纯', 'D罩', '可定制'],
+                desc: '简介：可定制服装，可定制玩具。'
+            },
+            {
+                name: '安妮',
+                age: 25,
+                location: '杭州',
+                job: '主播',
+                avatar: 'https://i.postimg.cc/DwJ6bbhc/photo-2026-06-01-16-49-26.jpg',
+                tags: ['御姐', 'B罩', '可定制'],
+                desc: '简介：可定制服装，可定制玩具。'
+            }
+        ];
+
+        let currentTab = 'xuanfei';
+        let currentUsers = xuanfeiUsers;
+        const grid = document.getElementById('userGrid');
+
+        // ============ 渲染用户卡片 ============
+        function renderUsers(data) {
+            grid.innerHTML = '';
+            data.forEach((user, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => openModal(index);
+                card.innerHTML = `
+                    <img src="${user.avatar}" alt="${user.name}">
+                    <div class="card-info">
+                        <div class="card-name">${user.name} <span style="color:#999;font-weight:normal;font-size:0.9rem">${user.age}岁</span></div>
+                        <div class="card-desc">${user.job} · ${user.location}</div>
+                        <div class="card-tags">
+                            ${user.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-detail" onclick="event.stopPropagation();openModal(${index})">查看详情</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 初始渲染
+        renderUsers(xuanfeiUsers);
+
+        // ============ 切换选项卡 ============
+        function switchTab(tab) {
+            currentTab = tab;
+            const tabConfig = {
+                xuanfei: {
+                    users: xuanfeiUsers,
+                    title: '💕 选妃'
+                },
+                baoyang: {
+                    users: baoyangUsers,
+                    title: '💰 包养'
+                },
+                luoliao: {
+                    users: luoliaoUsers,
+                    title: '🎥 裸聊'
+                }
+            };
+            currentUsers = tabConfig[tab].users;
+            
+            // 更新标签样式
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 更新标题
+            document.querySelector('header h1').textContent = tabConfig[tab].title;
+            
+            // 重新渲染
+            renderUsers(currentUsers);
+        }
+
+        // ============ 弹窗功能 ============
+        let currentUser = null;
+
+        function openModal(index) {
+            currentUser = currentUsers[index];
+            document.getElementById('modalImg').src = currentUser.avatar;
+            document.getElementById('modalName').textContent = currentUser.name;
+            document.getElementById('modalInfo').textContent = `${currentUser.age}岁 · ${currentUser.location} · ${currentUser.job}`;
+            document.getElementById('modalTags').innerHTML = currentUser.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+            document.getElementById('modalDesc').innerHTML = currentUser.desc.replace(/\n/g, '<br>');
+            
+            const modalActions = document.querySelector('.modal .card-actions');
+            modalActions.classList.toggle('package-actions', currentTab === 'luoliao');
+            if (currentTab === 'baoyang') {
+                modalActions.innerHTML = `<button class="btn btn-detail" id="videoVerifyBtn">🎥 视频验证（需先验资）</button>`;
+            } else if (currentTab === 'luoliao') {
+                modalActions.innerHTML = `
+                    <button class="btn btn-detail package-btn">5U 试聊5分钟 · 不露脸</button>
+                    <button class="btn btn-detail package-btn">30U 40分钟 · 露脸</button>
+                    <button class="btn btn-detail package-btn">60U 2小时 · 露脸</button>
+                `;
+            } else {
+                modalActions.innerHTML = `<button class="btn btn-detail">💘 约她</button>`;
+            }
+            
+            document.getElementById('modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('modal').onclick = function(e) {
+            if (e.target === this) closeModal();
+        };
+
+
+    </script>
+
+    <footer>
+        <div class="footer-content">
+            <div class="record-info">
+                <div class="record-item">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'%3E%3C/path%3E%3Cpath d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'%3E%3C/path%3E%3C/svg%3E" alt="ICP备案" width="14" height="14">
+                    <span>粤ICP备2026XXXXXX号</span>
+                </div>
+                <div class="record-item">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpath d='M12 6v6l4 2'%3E%3C/path%3E%3C/svg%3E" alt="公安备案" width="14" height="14">
+                    <span>粤公网安备44030XXXXX号</span>
+                </div>
+            </div>
+            <p class="copyright">Copyright © 2026 选妃网. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
